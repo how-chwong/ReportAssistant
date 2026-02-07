@@ -39,7 +39,7 @@ ReportAssistant 是一个面向开发者的年度量化报告原型，支持选�
    - 选择 GitLab 或 SVN。
    - 输入服务器地址（如 `https://git.example.com`）。
    - 选择年度。
-   - 输入用户名与 Token/密码。
+   - 输入用户名与 Token/密码（GitLab 支持 Token 或用户名密码方式）。
 4. 点击 **生成年度报告**，系统会从 GitLab API 或 SVN 日志拉取数据并生成可视化报告。
 
 > 提示：SVN 拉取需要本地安装 `svn` 命令行工具，并确保服务器允许日志查询。

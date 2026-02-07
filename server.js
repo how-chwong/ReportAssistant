@@ -18,18 +18,28 @@ const parseYearRange = (year) => ({
   until: `${year}-12-31T23:59:59Z`,
 });
 
-const fetchGitLabProjects = async (serverUrl, token) => {
+const buildGitLabHeaders = ({ token, username, password }) => {
+  if (token) {
+    return { "PRIVATE-TOKEN": token };
+  }
+  if (username && password) {
+    const encoded = Buffer.from(`${username}:${password}`).toString("base64");
+    return { Authorization: `Basic ${encoded}` };
+  }
+  return {};
+};
+
+const fetchGitLabProjects = async ({ serverUrl, token, username, password }) => {
   const projects = [];
   let page = 1;
   let hasMore = true;
+  const headers = buildGitLabHeaders({ token, username, password });
 
   while (hasMore) {
     const response = await fetch(
       `${serverUrl}/api/v4/projects?membership=true&per_page=100&page=${page}`,
       {
-        headers: {
-          "PRIVATE-TOKEN": token,
-        },
+        headers,
       },
     );
 
@@ -47,10 +57,11 @@ const fetchGitLabProjects = async (serverUrl, token) => {
   return projects;
 };
 
-const fetchGitLabCommits = async ({ serverUrl, token, projectId, since, until }) => {
+const fetchGitLabCommits = async ({ serverUrl, token, username, password, projectId, since, until }) => {
   const commits = [];
   let page = 1;
   let hasMore = true;
+  const headers = buildGitLabHeaders({ token, username, password });
 
   while (hasMore) {
     const response = await fetch(
@@ -58,9 +69,7 @@ const fetchGitLabCommits = async ({ serverUrl, token, projectId, since, until })
         since,
       )}&until=${encodeURIComponent(until)}&per_page=100&page=${page}&with_stats=true`,
       {
-        headers: {
-          "PRIVATE-TOKEN": token,
-        },
+        headers,
       },
     );
 
@@ -139,20 +148,22 @@ const parseSvnLog = (xml, serverUrl) => {
 
 app.post("/api/gitlab/report", async (req, res) => {
   try {
-    const { serverUrl, token, year } = req.body;
-    if (!serverUrl || !token || !year) {
-      res.status(400).json({ error: "缺少 GitLab 连接信息。" });
+    const { serverUrl, token, username, password, year } = req.body;
+    if (!serverUrl || !year || (!token && !(username && password))) {
+      res.status(400).json({ error: "缺少 GitLab 连接信息（需要 Token 或用户名密码）。" });
       return;
     }
 
     const { since, until } = parseYearRange(year);
-    const projects = await fetchGitLabProjects(serverUrl, token);
+    const projects = await fetchGitLabProjects({ serverUrl, token, username, password });
     const commits = [];
 
     for (const project of projects) {
       const projectCommits = await fetchGitLabCommits({
         serverUrl,
         token,
+        username,
+        password,
         projectId: project.id,
         since,
         until,
