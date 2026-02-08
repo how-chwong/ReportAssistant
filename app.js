@@ -153,7 +153,7 @@ const stopWords = ["fix", "feat", "chore", "refactor", "修复", "新增", "更�
 
 const getHour = (dateString) => new Date(dateString).getHours();
 
-const fetchReport = async ({ serverType, serverUrl, username, password, year }) => {
+const fetchReport = async ({ serverType, serverUrl, username, password, authMethod, year }) => {
   const endpoint = serverType === "svn" ? "/api/svn/report" : "/api/gitlab/report";
   const response = await fetch(endpoint, {
     method: "POST",
@@ -164,7 +164,7 @@ const fetchReport = async ({ serverType, serverUrl, username, password, year }) 
       serverUrl,
       username,
       password,
-      token: password,
+      token: authMethod === "token" ? password : undefined,
       year,
     }),
   });
@@ -326,10 +326,11 @@ form.addEventListener("submit", async (event) => {
   const serverUrl = document.getElementById("server-url").value;
   const username = document.getElementById("username").value;
   const password = document.getElementById("password").value;
+  const authMethod = document.getElementById("auth-method").value;
   const year = document.getElementById("year-select").value;
 
   submitButton.disabled = true;
-  statusText.textContent = "正在连接服务器并拉取提交数据…";
+  statusText.textContent = `正在使用${authMethod === "token" ? "Token" : "用户名密码"}验证并拉取提交数据…`;
   statusText.classList.add("loading");
   statusText.classList.remove("error");
 
@@ -339,6 +340,7 @@ form.addEventListener("submit", async (event) => {
       serverUrl,
       username,
       password,
+      authMethod,
       year,
     });
     applyReport(result.commits, result.summary);

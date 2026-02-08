@@ -57,6 +57,13 @@
           <input id="username" type="text" placeholder="username" required />
         </label>
         <label>
+          登录验证方式
+          <select id="auth-method" required>
+            <option value="token" selected>Token（推荐）</option>
+            <option value="basic">用户名 + 密码</option>
+          </select>
+        </label>
+        <label>
           密码 / Token
           <input id="password" type="password" placeholder="••••••••" required />
         </label>
