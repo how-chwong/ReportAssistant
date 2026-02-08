@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ReportAssistant - 开发者年度量化报告</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">ReportAssistant</p>
+        <h1>开发者年度量化报告</h1>
+        <p class="subtitle">选择代码版本管理服务器并授权后，即刻生成年度提交画像。</p>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-card">
+          <span>年度</span>
+          <strong id="hero-year">2024</strong>
+        </div>
+        <div class="hero-card">
+          <span>生成耗时</span>
+          <strong>≈ 3 秒</strong>
+        </div>
+        <div class="hero-card">
+          <span>分析项目</span>
+          <strong id="hero-projects">0</strong>
+        </div>
+      </div>
+    </header>
+
+    <section class="card">
+      <h2>数据源设置</h2>
+      <form id="report-form" class="form-grid">
+        <label>
+          代码版本管理服务器
+          <select id="server-select" required>
+            <option value="gitlab">GitLab</option>
+            <option value="svn">SVN</option>
+          </select>
+        </label>
+        <label>
+          服务器地址
+          <input id="server-url" type="url" placeholder="https://git.example.com" required />
+        </label>
+        <label>
+          年度
+          <select id="year-select" required>
+            <option value="2024" selected>2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+          </select>
+        </label>
+        <label>
+          用户名
+          <input id="username" type="text" placeholder="username" required />
+        </label>
+        <label>
+          登录验证方式
+          <select id="auth-method" required>
+            <option value="token" selected>Token（推荐）</option>
+            <option value="basic">用户名 + 密码</option>
+          </select>
+        </label>
+        <label>
+          密码 / Token
+          <input id="password" type="password" placeholder="••••••••" required />
+        </label>
+        <label class="checkbox">
+          <input id="remember" type="checkbox" />
+          记住服务器与账号偏好
+        </label>
+        <button class="primary" type="submit">生成年度报告</button>
+      </form>
+      <div class="status" id="status-text">等待填写信息后生成报告。</div>
+      <div class="notice">
+        <span>提示：</span>
+        点击生成报告后，将自动拉取提交记录、活跃项目与代码增删等数据生成可视化指标。
+      </div>
+    </section>
+
+    <section class="metrics">
+      <div class="card">
+        <h3>核心指标</h3>
+        <div class="metric-grid" id="metric-grid"></div>
+      </div>
+      <div class="card">
+        <h3>代码增删量</h3>
+        <div class="bar-chart">
+          <div>
+            <span>新增行数</span>
+            <div class="bar">
+              <div id="bar-add" class="bar-fill"></div>
+            </div>
+            <strong id="line-add">0</strong>
+          </div>
+          <div>
+            <span>删除行数</span>
+            <div class="bar">
+              <div id="bar-del" class="bar-fill danger"></div>
+            </div>
+            <strong id="line-del">0</strong>
+          </div>
+        </div>
+        <div class="hint" id="activity-hint">活跃时间段：--</div>
+      </div>
+    </section>
+
+    <section class="grid-two">
+      <div class="card">
+        <h3>高频关键词（Commit message）</h3>
+        <div id="keyword-list" class="tag-list"></div>
+      </div>
+      <div class="card">
+        <h3>偏好项目 / 模块</h3>
+        <table class="table" id="project-table">
+          <thead>
+            <tr>
+              <th>项目</th>
+              <th>提交数</th>
+              <th>占比</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h3>提交类型分布</h3>
+      <div class="split">
+        <div>
+          <p>修复型提交占比</p>
+          <div class="pill">
+            <div id="fix-rate" class="pill-fill"></div>
+          </div>
+          <strong id="fix-rate-text">0%</strong>
+        </div>
+        <div>
+          <p>新功能提交占比</p>
+          <div class="pill">
+            <div id="feature-rate" class="pill-fill accent"></div>
+          </div>
+          <strong id="feature-rate-text">0%</strong>
+        </div>
+        <div>
+          <p>最大单日提交数</p>
+          <div class="highlight" id="max-day">--</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>数据仅用于演示，真实环境将通过企业 OAuth 或 Token 安全获取。</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
