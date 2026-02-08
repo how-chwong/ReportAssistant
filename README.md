@@ -42,7 +42,7 @@ ReportAssistant 是一个面向开发者的年度量化报告原型，支持选�
    - 输入用户名与 Token/密码（GitLab 支持 Token 或用户名密码方式）。
 4. 点击 **生成年度报告**，系统会从 GitLab API 或 SVN 日志拉取数据并生成可视化报告。
 
-> 提示：SVN 拉取需要本地安装 `svn` 命令行工具，并确保服务器允许日志查询。
+> 提示：SVN 拉取通过 WebDAV/REPORT 接口完成，需要服务器启用 HTTP(S) 访问并允许日志查询。
 
 ## 系统设计说明
 
@@ -63,7 +63,7 @@ ReportAssistant 是一个面向开发者的年度量化报告原型，支持选�
   - `renderMetrics` 负责将数据渲染至页面。
 - `server.js`：
   - 调用 GitLab API 拉取项目与提交记录。
-  - 通过 `svn log --xml` 获取 SVN 年度日志并解析。
+  - 通过 WebDAV/REPORT 拉取 SVN 年度日志并解析。
 
 ## 后续可扩展方向
 

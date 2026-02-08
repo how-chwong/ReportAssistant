@@ -1,7 +1,6 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { execFile } from "child_process";
 import { XMLParser } from "fast-xml-parser";
 
 const app = express();
@@ -97,39 +96,77 @@ const normalizeGitLabCommits = (commits, project) =>
     deletions: commit.stats?.deletions ?? 0,
   }));
 
-const runSvnLog = ({ serverUrl, username, password, year }) =>
-  new Promise((resolve, reject) => {
-    const revisionRange = `{${year}-01-01}:{${year}-12-31}`;
-    const args = [
-      "log",
-      serverUrl,
-      "--xml",
-      "--non-interactive",
-      "--trust-server-cert",
-      "--revision",
-      revisionRange,
-    ];
+const buildBasicAuthHeader = ({ username, password }) => {
+  if (!username || !password) {
+    return {};
+  }
+  const encoded = Buffer.from(`${username}:${password}`).toString("base64");
+  return { Authorization: `Basic ${encoded}` };
+};
 
-    if (username) {
-      args.push("--username", username);
-    }
-    if (password) {
-      args.push("--password", password);
-    }
-
-    execFile("svn", args, { maxBuffer: 10 * 1024 * 1024 }, (error, stdout, stderr) => {
-      if (error) {
-        reject(new Error(`SVN 日志获取失败: ${stderr || error.message}`));
-        return;
-      }
-      resolve(stdout);
-    });
+const svnReportRequest = async ({ url, body, username, password }) => {
+  const response = await fetch(url, {
+    method: "REPORT",
+    headers: {
+      "Content-Type": "text/xml",
+      ...buildBasicAuthHeader({ username, password }),
+    },
+    body,
   });
 
-const parseSvnLog = (xml, serverUrl) => {
-  const parser = new XMLParser({ ignoreAttributes: false });
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`SVN 日志获取失败: ${response.status} ${text}`);
+  }
+
+  return response.text();
+};
+
+const fetchSvnRevisionByDate = async ({ vccUrl, date, username, password }) => {
+  const body = `<?xml version="1.0" encoding="utf-8"?>\n<S:dated-rev-report xmlns:S="svn:">\n  <S:creationdate>${date}</S:creationdate>\n</S:dated-rev-report>`;
+  const xml = await svnReportRequest({ url: vccUrl, body, username, password });
+  const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true });
   const parsed = parser.parse(xml);
-  const entries = parsed?.log?.logentry ?? [];
+  const revision = parsed?.["dated-rev-report"]?.["version-name"];
+  if (!revision) {
+    throw new Error("SVN 日期转版本号失败，请检查服务器是否支持 WebDAV/REPORT。");
+  }
+  return revision;
+};
+
+const runSvnLog = async ({ serverUrl, username, password, year }) => {
+  const vccUrl = serverUrl.endsWith("/")
+    ? `${serverUrl}!svn/vcc/default`
+    : `${serverUrl}/!svn/vcc/default`;
+  const startDate = `${year}-01-01T00:00:00Z`;
+  const endDate = `${year}-12-31T23:59:59Z`;
+  const startRevision = await fetchSvnRevisionByDate({
+    vccUrl,
+    date: startDate,
+    username,
+    password,
+  });
+  const endRevision = await fetchSvnRevisionByDate({
+    vccUrl,
+    date: endDate,
+    username,
+    password,
+  });
+
+  const logBody = `<?xml version="1.0" encoding="utf-8"?>\n<S:log-report xmlns:S="svn:">\n  <S:start-revision>${endRevision}</S:start-revision>\n  <S:end-revision>${startRevision}</S:end-revision>\n  <S:discover-changed-paths/>\n  <S:all-revprops/>\n</S:log-report>`;
+
+  return svnReportRequest({
+    url: vccUrl,
+    body: logBody,
+    username,
+    password,
+  });
+};
+
+const parseSvnLog = (xml, serverUrl) => {
+  const parser = new XMLParser({ ignoreAttributes: false, removeNSPrefix: true });
+  const parsed = parser.parse(xml);
+  const entries = parsed?.["log-report"]?.["log-item"] ?? [];
   const list = Array.isArray(entries) ? entries : [entries];
 
   return list.map((entry) => {
@@ -139,7 +176,7 @@ const parseSvnLog = (xml, serverUrl) => {
       date: entry.date,
       project: serverUrl,
       module: firstPath || "svn",
-      message: entry.msg ?? "",
+      message: entry.comment ?? "",
       additions: 0,
       deletions: 0,
     };
