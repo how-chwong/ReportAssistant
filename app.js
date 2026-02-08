@@ -137,6 +137,7 @@ const heroProjects = document.getElementById("hero-projects");
 const activityHint = document.getElementById("activity-hint");
 const statusText = document.getElementById("status-text");
 const submitButton = document.querySelector("button.primary");
+const yearSelect = document.getElementById("year-select");
 
 const lineAdd = document.getElementById("line-add");
 const lineDel = document.getElementById("line-del");
@@ -152,6 +153,21 @@ const maxDay = document.getElementById("max-day");
 const stopWords = ["fix", "feat", "chore", "refactor", "修复", "新增", "更新", "优化", "支持", "添加", "增强"];
 
 const getHour = (dateString) => new Date(dateString).getHours();
+
+const populateYearOptions = () => {
+  const currentYear = new Date().getFullYear();
+  yearSelect.innerHTML = "";
+  for (let offset = 0; offset <= 5; offset += 1) {
+    const year = currentYear - offset;
+    const option = document.createElement("option");
+    option.value = `${year}`;
+    option.textContent = `${year}`;
+    if (offset === 0) {
+      option.selected = true;
+    }
+    yearSelect.appendChild(option);
+  }
+};
 
 const fetchReport = async ({ serverType, serverUrl, username, password, authMethod, year }) => {
   const endpoint = serverType === "svn" ? "/api/svn/report" : "/api/gitlab/report";
@@ -353,4 +369,5 @@ form.addEventListener("submit", async (event) => {
   }
 });
 
+populateYearOptions();
 applyReport(mockCommits, "本地演示数据");
